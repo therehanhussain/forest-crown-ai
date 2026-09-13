@@ -79,7 +79,7 @@ st.markdown(
     }
     .block-container {
         max-width: 1440px !important;
-        padding-top: 1.5rem !important;
+        padding-top: 3.25rem !important;
         padding-bottom: 3.5rem !important;
         padding-left: 2rem !important;
         padding-right: 2rem !important;
@@ -87,8 +87,8 @@ st.markdown(
 
     /* Hero Section */
     .hero-container {
-        padding: 2px 0 10px 0;
-        margin-bottom: 6px;
+        padding: 4px 0 4px 0;
+        margin-bottom: 4px;
     }
     .hero-title {
         font-size: 1.75rem;
@@ -96,7 +96,7 @@ st.markdown(
         letter-spacing: 0.04em;
         text-transform: uppercase;
         color: #F8FAFC;
-        line-height: 1.15;
+        line-height: 1.25;
         margin-bottom: 3px;
     }
     .hero-subtitle {
@@ -122,8 +122,8 @@ st.markdown(
         background: #111827;
         border: 1px solid #1F2937;
         border-radius: 6px;
-        padding: 6px 14px;
-        margin-bottom: 18px;
+        padding: 5px 12px;
+        margin-bottom: 8px;
         font-size: 0.74rem;
         font-weight: 600;
         letter-spacing: 0.06em;
@@ -134,6 +134,16 @@ st.markdown(
     .workflow-arrow {
         color: #4B5563;
         font-size: 0.70rem;
+    }
+
+    /* Cohesive Analysis Input Area */
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        background-color: #0F172A !important;
+        border: 1px solid #1E293B !important;
+        border-radius: 8px !important;
+        padding: 14px 18px !important;
+        margin-bottom: 12px !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
     }
 
     /* Primary Analysis Input Card */
@@ -416,18 +426,18 @@ st.markdown(
 
     /* Section Headings */
     .section-title {
-        font-size: 1.05rem;
+        font-size: 1.02rem;
         font-weight: 700;
         letter-spacing: 0.04em;
         text-transform: uppercase;
         color: #F8FAFC;
-        margin-top: 20px;
+        margin-top: 10px;
         margin-bottom: 2px;
     }
     .section-sub {
-        font-size: 0.82rem;
+        font-size: 0.80rem;
         color: #94A3B8;
-        margin-bottom: 12px;
+        margin-bottom: 8px;
     }
 
     /* Quality Card */
@@ -662,8 +672,8 @@ def main():
     # -------------------------------------------------------------------------
     st.markdown(
         """
-        <div class="section-title">ANALYSIS INPUT</div>
-        <div class="section-sub">Select demonstration benchmark data or supply custom forest imagery and vector boundary.</div>
+        <div class="section-title" style="margin-top: 2px; margin-bottom: 2px;">ANALYSIS INPUT</div>
+        <div class="section-sub" style="margin-bottom: 8px;">Select demonstration benchmark data or supply custom forest imagery and vector boundary.</div>
         """,
         unsafe_allow_html=True
     )
@@ -674,104 +684,116 @@ def main():
     user_gsd: Optional[float] = None
     geotiff_meta = None
 
-    # Top Row: Dataset selector dropdown
-    data_source_mode = st.selectbox(
-        "DATASET",
-        options=["Built-in Demo Dataset", "Upload Custom Files"],
-        index=0,
-        help="Select demonstration dataset or upload your own imagery and boundary."
-    )
+    with st.container(border=True):
+        # Top Row: Dataset selector dropdown
+        data_source_mode = st.selectbox(
+            "DATASET",
+            options=["Built-in Demo Dataset", "Upload Custom Files"],
+            index=0,
+            help="Select demonstration dataset or upload your own imagery and boundary."
+        )
 
-    if data_source_mode == "Built-in Demo Dataset":
-        col_demo_sel, col_demo_badge = st.columns([1, 2])
-        with col_demo_sel:
-            demo_choice = st.selectbox(
-                "DEMO DATASET",
-                options=[
-                    "Ordway-Swisher Forest Demo",
-                    "Aerial Photo Demo (PNG)"
-                ],
-                index=0,
-                help="Select pre-loaded demonstration forest imagery."
-            )
-        with col_demo_badge:
-            if demo_choice == "Ordway-Swisher Forest Demo":
-                tif_path = Path("demo_data/sample_forest_utm17n.tif")
-                kml_path = Path("demo_data/sample_boundary.kml")
-                if tif_path.exists():
-                    image_bytes = tif_path.read_bytes()
-                    image_name = tif_path.name
-                if kml_path.exists():
-                    aoi_bytes = kml_path.read_bytes()
-                st.markdown(
-                    """
-                    <div class="benchmark-badge">
-                        <span class="benchmark-badge-tag">Ordway-Swisher Forest Demo:</span>
-                        Georeferenced NEON Forest (EPSG:32617, GSD: 0.10 m/px)
-                    </div>
-                    """,
-                    unsafe_allow_html=True
+        if data_source_mode == "Built-in Demo Dataset":
+            col_demo_sel, col_demo_badge = st.columns([1, 2])
+            with col_demo_sel:
+                demo_choice = st.selectbox(
+                    "DEMO DATASET",
+                    options=[
+                        "Ordway-Swisher Forest Demo",
+                        "Aerial Photo Demo (PNG)"
+                    ],
+                    index=0,
+                    help="Select pre-loaded demonstration forest imagery."
                 )
-            else:
-                png_path = Path("demo_data/sample_aerial_photo.png")
-                if png_path.exists():
-                    image_bytes = png_path.read_bytes()
-                    image_name = png_path.name
-                user_gsd = 0.10
-                st.markdown(
-                    """
-                    <div class="benchmark-badge">
-                        <span class="benchmark-badge-tag">Aerial Photo Demo:</span>
-                        Calibrated GSD 0.10 m/px (Local Metric Space)
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-    else:
-        # Two clean upload cards side by side
-        col_card_a, col_card_b = st.columns(2)
-        with col_card_a:
-            st.markdown('<div class="upload-card-title">CARD A: FOREST BOUNDARY (.kml, .kmz)</div>', unsafe_allow_html=True)
-            uploaded_aoi = st.file_uploader(
-                "Upload Forest Boundary (KML/KMZ)",
-                type=["kml", "kmz"],
-                key="aoi_upload",
-                help="Optional boundary defining Area of Interest (AOI)."
-            )
-            if uploaded_aoi:
-                aoi_bytes = uploaded_aoi.getvalue()
-
-        with col_card_b:
-            st.markdown('<div class="upload-card-title">CARD B: FOREST IMAGERY (.tif, .tiff, .jpg, .jpeg, .png)</div>', unsafe_allow_html=True)
-            uploaded_image = st.file_uploader(
-                "Upload Forest Imagery",
-                type=["tif", "tiff", "png", "jpg", "jpeg"],
-                key="img_upload",
-                help="GeoTIFF recommended for embedded CRS and GSD."
-            )
-            if uploaded_image:
-                image_bytes = uploaded_image.getvalue()
-                image_name = uploaded_image.name
-
-        # Spatial Resolution / GSD Handling
-        if image_bytes and image_name.lower().endswith((".tif", ".tiff")):
-            try:
-                geotiff_meta = read_geotiff_metadata(image_bytes)
-                if geotiff_meta.has_georeference:
+            with col_demo_badge:
+                if demo_choice == "Ordway-Swisher Forest Demo":
+                    tif_path = Path("demo_data/sample_forest_utm17n.tif")
+                    kml_path = Path("demo_data/sample_boundary.kml")
+                    if tif_path.exists():
+                        image_bytes = tif_path.read_bytes()
+                        image_name = tif_path.name
+                    if kml_path.exists():
+                        aoi_bytes = kml_path.read_bytes()
                     st.markdown(
-                        f"""
-                        <div class="benchmark-badge" style="margin-top: 4px;">
-                            <span class="benchmark-badge-tag">Detected GSD:</span>
-                            {geotiff_meta.gsd_x_m:.4f} × {geotiff_meta.gsd_y_m:.4f} m/px &nbsp;|&nbsp; 
-                            <strong>Source:</strong> GeoTIFF metadata &nbsp;|&nbsp; 
-                            <strong>CRS:</strong> {geotiff_meta.crs}
+                        """
+                        <div class="benchmark-badge" style="margin-top: 24px; margin-bottom: 0px;">
+                            <span class="benchmark-badge-tag">Ordway-Swisher Forest Demo:</span>
+                            Georeferenced NEON Forest (EPSG:32617, GSD: 0.10 m/px)
                         </div>
                         """,
                         unsafe_allow_html=True
                     )
-                    user_gsd = None
                 else:
-                    st.warning("GeoTIFF has no embedded geotransform. Manual GSD is required.")
+                    png_path = Path("demo_data/sample_aerial_photo.png")
+                    if png_path.exists():
+                        image_bytes = png_path.read_bytes()
+                        image_name = png_path.name
+                    user_gsd = 0.10
+                    st.markdown(
+                        """
+                        <div class="benchmark-badge" style="margin-top: 24px; margin-bottom: 0px;">
+                            <span class="benchmark-badge-tag">Aerial Photo Demo:</span>
+                            Calibrated GSD 0.10 m/px (Local Metric Space)
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+        else:
+            # Two clean upload cards side by side
+            col_card_a, col_card_b = st.columns(2)
+            with col_card_a:
+                st.markdown('<div class="upload-card-title">CARD A: FOREST BOUNDARY (.kml, .kmz)</div>', unsafe_allow_html=True)
+                uploaded_aoi = st.file_uploader(
+                    "Upload Forest Boundary (KML/KMZ)",
+                    type=["kml", "kmz"],
+                    key="aoi_upload",
+                    help="Optional boundary defining Area of Interest (AOI)."
+                )
+                if uploaded_aoi:
+                    aoi_bytes = uploaded_aoi.getvalue()
+
+            with col_card_b:
+                st.markdown('<div class="upload-card-title">CARD B: FOREST IMAGERY (.tif, .tiff, .jpg, .jpeg, .png)</div>', unsafe_allow_html=True)
+                uploaded_image = st.file_uploader(
+                    "Upload Forest Imagery",
+                    type=["tif", "tiff", "png", "jpg", "jpeg"],
+                    key="img_upload",
+                    help="GeoTIFF recommended for embedded CRS and GSD."
+                )
+                if uploaded_image:
+                    image_bytes = uploaded_image.getvalue()
+                    image_name = uploaded_image.name
+
+            # Spatial Resolution / GSD Handling
+            if image_bytes and image_name.lower().endswith((".tif", ".tiff")):
+                try:
+                    geotiff_meta = read_geotiff_metadata(image_bytes)
+                    if geotiff_meta.has_georeference:
+                        st.markdown(
+                            f"""
+                            <div class="benchmark-badge" style="margin-top: 4px;">
+                                <span class="benchmark-badge-tag">Detected GSD:</span>
+                                {geotiff_meta.gsd_x_m:.4f} × {geotiff_meta.gsd_y_m:.4f} m/px &nbsp;|&nbsp; 
+                                <strong>Source:</strong> GeoTIFF metadata &nbsp;|&nbsp; 
+                                <strong>CRS:</strong> {geotiff_meta.crs}
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
+                        user_gsd = None
+                    else:
+                        st.warning("GeoTIFF has no embedded geotransform. Manual GSD is required.")
+                        user_gsd = st.number_input(
+                            "GROUND SAMPLING DISTANCE (M/PX)",
+                            min_value=0.001,
+                            max_value=10.0,
+                            value=0.10,
+                            step=0.01,
+                            format="%.3f",
+                            help="User-supplied spatial resolution."
+                        )
+                        st.caption("Provenance: User-supplied spatial resolution")
+                except Exception:
                     user_gsd = st.number_input(
                         "GROUND SAMPLING DISTANCE (M/PX)",
                         min_value=0.001,
@@ -782,61 +804,50 @@ def main():
                         help="User-supplied spatial resolution."
                     )
                     st.caption("Provenance: User-supplied spatial resolution")
-            except Exception:
+            elif image_bytes:
                 user_gsd = st.number_input(
                     "GROUND SAMPLING DISTANCE (M/PX)",
                     min_value=0.001,
                     max_value=10.0,
-                    value=0.10,
+                    value=float(user_gsd or 0.10),
                     step=0.01,
                     format="%.3f",
                     help="User-supplied spatial resolution."
                 )
                 st.caption("Provenance: User-supplied spatial resolution")
-        elif image_bytes:
-            user_gsd = st.number_input(
-                "GROUND SAMPLING DISTANCE (M/PX)",
-                min_value=0.001,
-                max_value=10.0,
-                value=float(user_gsd or 0.10),
-                step=0.01,
-                format="%.3f",
-                help="User-supplied spatial resolution."
+
+        # If GeoTIFF metadata not read yet, read it
+        if image_bytes and image_name.lower().endswith((".tif", ".tiff")) and geotiff_meta is None:
+            try:
+                geotiff_meta = read_geotiff_metadata(image_bytes)
+            except Exception:
+                geotiff_meta = None
+
+        # Control parameters row
+        col_conf, col_tile = st.columns(2)
+        with col_conf:
+            confidence_threshold = st.slider(
+                "CONFIDENCE THRESHOLD",
+                min_value=0.05,
+                max_value=0.90,
+                value=0.20,
+                step=0.05,
+                help="Minimum detector score threshold."
             )
-            st.caption("Provenance: User-supplied spatial resolution")
+        with col_tile:
+            patch_size = st.slider(
+                "TILING WINDOW (PX)",
+                min_value=200,
+                max_value=1200,
+                value=400,
+                step=50,
+                help="Window size for sliding-window inference across the image."
+            )
 
-    # If GeoTIFF metadata not read yet, read it
-    if image_bytes and image_name.lower().endswith((".tif", ".tiff")) and geotiff_meta is None:
-        try:
-            geotiff_meta = read_geotiff_metadata(image_bytes)
-        except Exception:
-            geotiff_meta = None
-
-    # Control parameters row
-    col_conf, col_tile = st.columns(2)
-    with col_conf:
-        confidence_threshold = st.slider(
-            "CONFIDENCE THRESHOLD",
-            min_value=0.05,
-            max_value=0.90,
-            value=0.20,
-            step=0.05,
-            help="Minimum detector score threshold."
-        )
-    with col_tile:
-        patch_size = st.slider(
-            "TILING WINDOW (PX)",
-            min_value=200,
-            max_value=1200,
-            value=400,
-            step=50,
-            help="Window size for sliding-window inference across the image."
-        )
-
-    # Prominent Centered Primary Button
-    col_btn_l, col_btn_c, col_btn_r = st.columns([1.2, 1.6, 1.2])
-    with col_btn_c:
-        run_analysis_clicked = st.button("ANALYZE FOREST", type="primary", use_container_width=True)
+        # Prominent Centered Primary Button
+        col_btn_l, col_btn_c, col_btn_r = st.columns([1.2, 1.6, 1.2])
+        with col_btn_c:
+            run_analysis_clicked = st.button("ANALYZE FOREST", type="primary", use_container_width=True)
 
     # -------------------------------------------------------------------------
     # 3. INPUT VALIDATION STATUS PANEL
