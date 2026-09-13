@@ -79,6 +79,15 @@ data/*
 outputs/*
 !outputs/.gitkeep
 
+# Temporary, scratch, and debug files
+scratch/
+debug_*
+*.tmp
+*.bak
+/screenshot_*.png
+/debug_*.png
+
 # OS generated files
 .DS_Store
 Thumbs.db
+
