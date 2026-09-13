@@ -207,6 +207,43 @@ def create_folium_map(
                 ).add_to(trees_layer)
         trees_layer.add_to(m)
 
+    # Clean professional GIS legend
+    legend_html = '''
+    <div style="
+        position: fixed; 
+        bottom: 25px; left: 25px; width: 180px; height: auto;
+        background-color: rgba(255, 255, 255, 0.95);
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1);
+        z-index: 9999;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 11px;
+        color: #1e293b;
+        padding: 9px 12px;
+        line-height: 1.4;
+    ">
+        <div style="font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #0f172a; margin-bottom: 6px; font-size: 10px;">Layers</div>
+        <div style="display: flex; align-items: center; margin-bottom: 4px;">
+            <span style="display: inline-block; width: 12px; height: 12px; background-color: rgba(0, 176, 255, 0.25); border: 2px dashed #00B0FF; margin-right: 8px; border-radius: 2px;"></span>
+            <span>AOI Boundary</span>
+        </div>
+        <div style="display: flex; align-items: center; margin-bottom: 4px;">
+            <span style="display: inline-block; width: 12px; height: 12px; background-color: rgba(46, 125, 50, 0.5); border: 1px solid #1B5E20; margin-right: 8px; border-radius: 2px;"></span>
+            <span>Dissolved Canopy</span>
+        </div>
+        <div style="display: flex; align-items: center; margin-bottom: 4px;">
+            <span style="display: inline-block; width: 10px; height: 10px; background-color: #76FF03; border: 1.5px solid #33691E; margin-right: 9px; border-radius: 50%;"></span>
+            <span>Crown (≥ 0.50)</span>
+        </div>
+        <div style="display: flex; align-items: center;">
+            <span style="display: inline-block; width: 10px; height: 10px; background-color: #FFD600; border: 1.5px solid #E65100; margin-right: 9px; border-radius: 50%;"></span>
+            <span>Crown (< 0.50)</span>
+        </div>
+    </div>
+    '''
+    m.get_root().html.add_child(folium.Element(legend_html))
+
     folium.LayerControl(collapsed=False).add_to(m)
     return m
 
