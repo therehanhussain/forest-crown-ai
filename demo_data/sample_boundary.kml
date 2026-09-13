@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Sample Forest AOI Boundary</name>
+    <description>Ordway-Swisher Biological Station Forest Compartment A</description>
+    <Placemark>
+      <name>Compartment A</name>
+      <Polygon>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>
+              -81.99426984806703,29.690152698118197,0 -81.99400114340885,29.690154714627347,0 -81.99400345261489,29.690389330078247,0 -81.99427215789707,29.690387313550012,0 -81.99426984806703,29.690152698118197,0
+            </coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+    </Placemark>
+  </Document>
+</kml>
