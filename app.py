@@ -23,6 +23,13 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
+try:
+    import plotly.graph_objects as go
+    HAS_PLOTLY = True
+except ImportError:
+    go = None
+    HAS_PLOTLY = False
+
 from pipeline import PipelineResult, run_forest_crown_pipeline
 from src.geometry import OverlapStatus, check_aoi_image_overlap
 from src.io_utils import (
@@ -34,23 +41,34 @@ from src.io_utils import (
 from src.visualization import (
     create_folium_map,
     overlay_detections_on_image,
-    plot_area_comparison_chart,
-    plot_crown_diameter_distribution,
 )
 
-# Streamlit Page Configuration
+# Streamlit Page Configuration — 100% Full Width, No Sidebar
 st.set_page_config(
     page_title="Forest Crown AI | Canopy Intelligence",
     page_icon="🌲",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # Professional Carbon-Tech Design System (CSS)
 st.markdown(
     """
     <style>
-    /* Global Reset & Dark Charcoal/Slate Canvas */
+    /* Complete Sidebar Elimination — Zero Chevron / Drawer / Hamburger */
+    [data-testid="stSidebar"],
+    section[data-testid="stSidebar"],
+    div[data-testid="collapsedControl"],
+    button[data-testid="stSidebarCollapseButton"],
+    div[data-testid="stSidebarNav"] {
+        display: none !important;
+        visibility: hidden !important;
+        width: 0px !important;
+        height: 0px !important;
+        pointer-events: none !important;
+    }
+
+    /* Global Reset & Dark Slate Canvas */
     html, body, [class*="css"], .stApp {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         background-color: #0B0F19 !important;
@@ -59,100 +77,15 @@ st.markdown(
     header[data-testid="stHeader"] {
         background-color: #0B0F19 !important;
     }
-    
-    /* Sidebar Dark Slate Surface & Tight Spacing */
-    section[data-testid="stSidebar"] {
-        background-color: #0F172A !important;
-        border-right: 1px solid #1E293B !important;
-    }
-    section[data-testid="stSidebar"] div[data-testid="stVerticalBlock"] {
-        gap: 0.35rem !important;
-    }
-    .sidebar-sec-title {
-        font-size: 0.72rem !important;
-        font-weight: 700 !important;
-        letter-spacing: 0.08em !important;
-        text-transform: uppercase !important;
-        color: #94A3B8 !important;
-        margin-top: 10px !important;
-        margin-bottom: 4px !important;
-    }
-    .sidebar-divider {
-        border-top: 1px solid #1E293B;
-        margin: 8px 0 6px 0;
+    .block-container {
+        max-width: 1440px !important;
+        padding-top: 1.5rem !important;
+        padding-bottom: 3.5rem !important;
+        padding-left: 2rem !important;
+        padding-right: 2rem !important;
     }
 
-    /* FIX 1: Data Source radio buttons MUST have completely visible labels */
-    div[data-testid="stRadio"] div[role="radiogroup"] label {
-        display: flex !important;
-        align-items: center !important;
-        cursor: pointer !important;
-        gap: 8px !important;
-        margin-bottom: 4px !important;
-    }
-    div[data-testid="stRadio"] div[role="radiogroup"] label p,
-    div[data-testid="stRadio"] div[role="radiogroup"] label span,
-    div[data-testid="stRadio"] div[role="radiogroup"] [data-testid="stMarkdownContainer"] p {
-        color: #F8FAFC !important;
-        font-size: 0.86rem !important;
-        font-weight: 500 !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        display: inline-block !important;
-        margin: 0 !important;
-    }
-
-    /* Sliders: Forest Green Accent */
-    div[data-testid="stSlider"] div[data-baseweb="slider"] div[role="slider"] {
-        background-color: #2D6A4F !important;
-        border-color: #1B4332 !important;
-    }
-
-    /* Sidebar inputs, sliders, captions */
-    section[data-testid="stSidebar"] .stCaption,
-    section[data-testid="stSidebar"] p {
-        color: #94A3B8 !important;
-        font-size: 0.80rem !important;
-    }
-
-    /* Primary CTA Button (Refined Deep Forest Green) */
-    div.stButton > button[kind="primary"] {
-        background-color: #1B4332 !important;
-        color: #FFFFFF !important;
-        border: 1px solid #2D6A4F !important;
-        border-radius: 6px !important;
-        font-weight: 700 !important;
-        font-size: 0.86rem !important;
-        letter-spacing: 0.05em !important;
-        padding: 0.50rem 1rem !important;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
-        transition: all 0.15s ease-in-out !important;
-        text-transform: uppercase !important;
-    }
-    div.stButton > button[kind="primary"]:hover {
-        background-color: #2D6A4F !important;
-        border-color: #40916C !important;
-        color: #FFFFFF !important;
-    }
-    
-    /* Secondary & Download Buttons */
-    div.stDownloadButton > button {
-        background-color: #1E293B !important;
-        color: #F1F5F9 !important;
-        border: 1px solid #334155 !important;
-        border-radius: 6px !important;
-        font-weight: 600 !important;
-        font-size: 0.82rem !important;
-        padding: 0.45rem 0.85rem !important;
-        transition: all 0.15s ease-in-out !important;
-    }
-    div.stDownloadButton > button:hover {
-        border-color: #2D6A4F !important;
-        color: #A7F3D0 !important;
-        background-color: #143628 !important;
-    }
-
-    /* FIX 5: Hero - Compact, Premium */
+    /* Hero Section */
     .hero-container {
         padding: 2px 0 10px 0;
         margin-bottom: 6px;
@@ -180,17 +113,17 @@ st.markdown(
         line-height: 1.35;
     }
 
-    /* FIX 6: Subtle, Elegant Workflow Stepper */
+    /* Elegant Workflow Stepper */
     .workflow-bar {
         display: inline-flex;
         align-items: center;
         flex-wrap: wrap;
-        gap: 6px;
+        gap: 8px;
         background: #111827;
         border: 1px solid #1F2937;
         border-radius: 6px;
-        padding: 6px 12px;
-        margin-bottom: 16px;
+        padding: 6px 14px;
+        margin-bottom: 18px;
         font-size: 0.74rem;
         font-weight: 600;
         letter-spacing: 0.06em;
@@ -203,7 +136,124 @@ st.markdown(
         font-size: 0.70rem;
     }
 
-    /* FIX 7: Compact Validation Card */
+    /* Primary Analysis Input Card */
+    .analysis-input-card {
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 18px 22px;
+        margin-bottom: 16px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+    .input-card-title {
+        font-size: 0.82rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #0F172A;
+        margin-bottom: 2px;
+    }
+    .input-card-sub {
+        font-size: 0.78rem;
+        color: #64748B;
+        margin-bottom: 14px;
+    }
+
+    /* Upload Cards */
+    .upload-card-box {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        padding: 12px 14px;
+        margin-bottom: 10px;
+    }
+    .upload-card-title {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #334155;
+        margin-bottom: 8px;
+    }
+
+    /* Benchmark Description Badge */
+    .benchmark-badge {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 14px;
+        background: #ECFDF5;
+        border: 1px solid #A7F3D0;
+        border-radius: 6px;
+        font-size: 0.82rem;
+        color: #065F46;
+        font-weight: 500;
+        margin-top: 4px;
+        margin-bottom: 12px;
+    }
+    .benchmark-badge-tag {
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #047857;
+    }
+
+    /* Widget Labels & Controls */
+    div[data-testid="stWidgetLabel"] label p,
+    div[data-testid="stWidgetLabel"] label span {
+        font-size: 0.76rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.06em !important;
+        text-transform: uppercase !important;
+        color: #94A3B8 !important;
+    }
+    div[data-testid="stSlider"] div[data-baseweb="slider"] div[role="slider"] {
+        background-color: #059669 !important;
+        border-color: #047857 !important;
+    }
+
+    /* Primary Centered Action Button */
+    div.stButton > button[kind="primary"] {
+        background-color: #059669 !important;
+        color: #FFFFFF !important;
+        border: 1px solid #10B981 !important;
+        border-radius: 6px !important;
+        font-weight: 800 !important;
+        font-size: 0.95rem !important;
+        letter-spacing: 0.08em !important;
+        padding: 0.65rem 1.6rem !important;
+        min-height: 48px !important;
+        box-shadow: 0 2px 6px rgba(5, 150, 105, 0.25) !important;
+        transition: all 0.2s ease-in-out !important;
+        text-transform: uppercase !important;
+    }
+    div.stButton > button[kind="primary"]:hover {
+        background-color: #047857 !important;
+        border-color: #059669 !important;
+        box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4) !important;
+        color: #FFFFFF !important;
+    }
+
+    /* Secondary & Export Buttons */
+    div.stDownloadButton > button {
+        background-color: #1E293B !important;
+        color: #F1F5F9 !important;
+        border: 1px solid #334155 !important;
+        border-radius: 6px !important;
+        font-weight: 700 !important;
+        font-size: 0.82rem !important;
+        letter-spacing: 0.04em !important;
+        text-transform: uppercase !important;
+        padding: 0.50rem 1rem !important;
+        transition: all 0.15s ease-in-out !important;
+    }
+    div.stDownloadButton > button:hover {
+        border-color: #10B981 !important;
+        color: #A7F3D0 !important;
+        background-color: #064E3B !important;
+    }
+
+    /* Input Validation Card */
     .validation-card {
         background: #FFFFFF;
         border: 1px solid #E2E8F0;
@@ -275,7 +325,7 @@ st.markdown(
         display: inline-block;
     }
 
-    /* FIX 8: Compact Ready for Analysis Callout */
+    /* Ready Callout (Before Analysis) */
     .ready-callout {
         background: #F0FDF4;
         border: 1px solid #BBF7D0;
@@ -312,7 +362,7 @@ st.markdown(
         margin-top: 2px;
     }
 
-    /* FIX 11: Six Responsive KPI Cards (Zero Truncation Guarantee) */
+    /* Six Responsive KPI Cards */
     .kpi-container {
         display: grid;
         grid-template-columns: repeat(6, 1fr);
@@ -364,7 +414,7 @@ st.markdown(
         margin-top: 3px;
     }
 
-    /* FIX 12: Clean Map and Section Headings */
+    /* Section Headings */
     .section-title {
         font-size: 1.05rem;
         font-weight: 700;
@@ -380,13 +430,14 @@ st.markdown(
         margin-bottom: 12px;
     }
 
-    /* Quality Grid (White Floating Card) */
+    /* Quality Card */
     .quality-card {
         background: #FFFFFF;
         border: 1px solid #E2E8F0;
         border-radius: 6px;
         padding: 14px 18px;
-        margin-bottom: 20px;
+        height: 100%;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
     }
     .quality-row {
         display: flex;
@@ -394,7 +445,7 @@ st.markdown(
         align-items: center;
         padding: 6px 0;
         border-bottom: 1px solid #F1F5F9;
-        font-size: 0.84rem;
+        font-size: 0.82rem;
     }
     .quality-row:last-child {
         border-bottom: none;
@@ -408,7 +459,30 @@ st.markdown(
         color: #0F172A;
     }
 
-    /* Methodology Grid (White Floating Cards) */
+    /* Model Limitations Card */
+    .limitations-card {
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        padding: 14px 18px;
+        height: 100%;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+        font-size: 0.82rem;
+        color: #334155;
+        line-height: 1.45;
+    }
+    .limitations-item {
+        margin-bottom: 6px;
+        padding-left: 12px;
+        text-indent: -12px;
+    }
+    .limitations-bullet {
+        color: #DC2626;
+        font-weight: 700;
+        margin-right: 4px;
+    }
+
+    /* Methodology Grid */
     .method-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -433,8 +507,8 @@ st.markdown(
         margin-bottom: 3px;
         text-transform: uppercase;
     }
-    
-    /* Subtle Professional Footer */
+
+    /* Footer */
     .app-footer {
         margin-top: 40px;
         padding-top: 18px;
@@ -457,6 +531,64 @@ def get_cached_deepforest_detector():
     from src.detection import DeepForestDetector, load_deepforest_model
     model = load_deepforest_model()
     return DeepForestDetector(model_instance=model)
+
+
+def plot_crown_size_distribution_dark(crown_areas_m2: List[float]):
+    """Generates an interactive Plotly histogram of crown areas matching the carbon-tech dark theme."""
+    if not HAS_PLOTLY or not crown_areas_m2:
+        return None
+    mean_a = float(np.mean(crown_areas_m2))
+    median_a = float(np.median(crown_areas_m2))
+    fig = go.Figure()
+    fig.add_trace(go.Histogram(
+        x=crown_areas_m2,
+        nbinsx=25,
+        marker_color='#10B981',
+        marker_line_color='#047857',
+        marker_line_width=1,
+        opacity=0.85,
+        name='Crowns'
+    ))
+    fig.add_vline(x=mean_a, line_dash="dash", line_color="#34D399", annotation_text=f"Mean: {mean_a:.1f} m²", annotation_font_color="#A7F3D0")
+    fig.add_vline(x=median_a, line_dash="dot", line_color="#FBBF24", annotation_text=f"Median: {median_a:.1f} m²", annotation_font_color="#FDE68A")
+    fig.update_layout(
+        title=dict(text="Crown Size Distribution (m²)", font=dict(color="#F1F5F9", size=13)),
+        xaxis=dict(title="Crown Area (m²)", color="#94A3B8", gridcolor="#1E293B", zerolinecolor="#374151"),
+        yaxis=dict(title="Tree Count", color="#94A3B8", gridcolor="#1E293B", zerolinecolor="#374151"),
+        paper_bgcolor="#111827",
+        plot_bgcolor="#111827",
+        margin=dict(l=40, r=30, t=40, b=40),
+        height=320
+    )
+    return fig
+
+
+def plot_detection_confidence_dark(confidences: List[float]):
+    """Generates an interactive Plotly histogram of detection confidence scores."""
+    if not HAS_PLOTLY or not confidences:
+        return None
+    median_c = float(np.median(confidences))
+    fig = go.Figure()
+    fig.add_trace(go.Histogram(
+        x=confidences,
+        nbinsx=20,
+        marker_color='#059669',
+        marker_line_color='#047857',
+        marker_line_width=1,
+        opacity=0.85,
+        name='Confidence'
+    ))
+    fig.add_vline(x=median_c, line_dash="dash", line_color="#6EE7B7", annotation_text=f"Median: {median_c:.2f}", annotation_font_color="#A7F3D0")
+    fig.update_layout(
+        title=dict(text="Detection Confidence Distribution", font=dict(color="#F1F5F9", size=13)),
+        xaxis=dict(title="Confidence Score", color="#94A3B8", gridcolor="#1E293B", zerolinecolor="#374151", range=[0.0, 1.0]),
+        yaxis=dict(title="Tree Count", color="#94A3B8", gridcolor="#1E293B", zerolinecolor="#374151"),
+        paper_bgcolor="#111827",
+        plot_bgcolor="#111827",
+        margin=dict(l=40, r=30, t=40, b=40),
+        height=320
+    )
+    return fig
 
 
 def generate_summary_report(result: PipelineResult, image_filename: str) -> str:
@@ -496,12 +628,12 @@ def generate_summary_report(result: PipelineResult, image_filename: str) -> str:
     lines.append("")
     lines.append("## Methodological & Carbon Disclaimer")
     lines.append(m.carbon_disclaimer)
-    return "\n".join(lines)
+    return chr(10).join(lines)
 
 
 def main():
     # -------------------------------------------------------------------------
-    # 1. PRODUCT HERO & COMPACT WORKFLOW (FIX 5 & FIX 6)
+    # 1. PRODUCT HERO & WORKFLOW STEPPER
     # -------------------------------------------------------------------------
     st.markdown(
         """
@@ -526,34 +658,43 @@ def main():
     )
 
     # -------------------------------------------------------------------------
-    # 2. SIDEBAR ANALYSIS CONTROL PANEL (FIX 1, FIX 2, FIX 3, FIX 9)
+    # 2. ANALYSIS INPUT CARD (MAIN PAGE — FULL WIDTH)
     # -------------------------------------------------------------------------
-    with st.sidebar:
-        st.markdown('<div class="sidebar-sec-title" style="margin-top: 0;">DATA SOURCE</div>', unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div class="section-title">ANALYSIS INPUT</div>
+        <div class="section-sub">Select demonstration benchmark data or supply custom forest imagery and vector boundary.</div>
+        """,
+        unsafe_allow_html=True
+    )
 
-        data_source_mode = st.radio(
-            "DATA SOURCE",
-            options=["Built-in Demo Dataset", "Upload Custom Files"],
-            index=0,
-            label_visibility="collapsed"
-        )
+    image_bytes: Optional[bytes] = None
+    aoi_bytes: Optional[bytes] = None
+    image_name: str = ""
+    user_gsd: Optional[float] = None
+    geotiff_meta = None
 
-        image_bytes: Optional[bytes] = None
-        aoi_bytes: Optional[bytes] = None
-        image_name: str = ""
-        user_gsd: Optional[float] = None
+    # Top Row: Dataset selector dropdown
+    data_source_mode = st.selectbox(
+        "DATASET",
+        options=["Built-in Demo Dataset", "Upload Custom Files"],
+        index=0,
+        help="Select demonstration dataset or upload your own imagery and boundary."
+    )
 
-        if data_source_mode == "Built-in Demo Dataset":
+    if data_source_mode == "Built-in Demo Dataset":
+        col_demo_sel, col_demo_badge = st.columns([1, 2])
+        with col_demo_sel:
             demo_choice = st.selectbox(
-                "Select Demo Dataset",
+                "DEMO DATASET",
                 options=[
                     "Ordway-Swisher Forest Demo",
                     "Aerial Photo Demo (PNG)"
                 ],
                 index=0,
-                label_visibility="collapsed",
                 help="Select pre-loaded demonstration forest imagery."
             )
+        with col_demo_badge:
             if demo_choice == "Ordway-Swisher Forest Demo":
                 tif_path = Path("demo_data/sample_forest_utm17n.tif")
                 kml_path = Path("demo_data/sample_boundary.kml")
@@ -562,83 +703,140 @@ def main():
                     image_name = tif_path.name
                 if kml_path.exists():
                     aoi_bytes = kml_path.read_bytes()
-                st.caption("Ordway-Swisher Station (UTM 17N) • GeoTIFF + KML AOI")
+                st.markdown(
+                    """
+                    <div class="benchmark-badge">
+                        <span class="benchmark-badge-tag">Ordway-Swisher Forest Demo:</span>
+                        Georeferenced NEON Forest (EPSG:32617, GSD: 0.10 m/px)
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
             else:
                 png_path = Path("demo_data/sample_aerial_photo.png")
                 if png_path.exists():
                     image_bytes = png_path.read_bytes()
                     image_name = png_path.name
                 user_gsd = 0.10
-                st.caption("RGB Aerial Photo • Calibrated GSD = 0.100 m/px")
-        else:
-            uploaded_image = st.file_uploader(
-                "Upload Imagery (GeoTIFF, PNG, JPG)",
-                type=["tif", "tiff", "png", "jpg", "jpeg"],
-                help="GeoTIFF recommended for embedded CRS and GSD."
-            )
+                st.markdown(
+                    """
+                    <div class="benchmark-badge">
+                        <span class="benchmark-badge-tag">Aerial Photo Demo:</span>
+                        Calibrated GSD 0.10 m/px (Local Metric Space)
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+    else:
+        # Two clean upload cards side by side
+        col_card_a, col_card_b = st.columns(2)
+        with col_card_a:
+            st.markdown('<div class="upload-card-title">CARD A: FOREST BOUNDARY (.kml, .kmz)</div>', unsafe_allow_html=True)
             uploaded_aoi = st.file_uploader(
                 "Upload Forest Boundary (KML/KMZ)",
                 type=["kml", "kmz"],
-                help="Optional boundary defining Area of Interest."
+                key="aoi_upload",
+                help="Optional boundary defining Area of Interest (AOI)."
+            )
+            if uploaded_aoi:
+                aoi_bytes = uploaded_aoi.getvalue()
+
+        with col_card_b:
+            st.markdown('<div class="upload-card-title">CARD B: FOREST IMAGERY (.tif, .tiff, .jpg, .jpeg, .png)</div>', unsafe_allow_html=True)
+            uploaded_image = st.file_uploader(
+                "Upload Forest Imagery",
+                type=["tif", "tiff", "png", "jpg", "jpeg"],
+                key="img_upload",
+                help="GeoTIFF recommended for embedded CRS and GSD."
             )
             if uploaded_image:
                 image_bytes = uploaded_image.getvalue()
                 image_name = uploaded_image.name
-            if uploaded_aoi:
-                aoi_bytes = uploaded_aoi.getvalue()
 
-        st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
-        st.markdown('<div class="sidebar-sec-title">SPATIAL RESOLUTION</div>', unsafe_allow_html=True)
-
-        geotiff_meta = None
+        # Spatial Resolution / GSD Handling
         if image_bytes and image_name.lower().endswith((".tif", ".tiff")):
             try:
                 geotiff_meta = read_geotiff_metadata(image_bytes)
                 if geotiff_meta.has_georeference:
-                    st.markdown(f"**GSD:** `{geotiff_meta.gsd_x_m:.4f} × {geotiff_meta.gsd_y_m:.4f} m/px`")
-                    st.markdown("**Source:** `GeoTIFF metadata`")
-                    st.caption(f"CRS: `{geotiff_meta.crs}`")
+                    st.markdown(
+                        f"""
+                        <div class="benchmark-badge" style="margin-top: 4px;">
+                            <span class="benchmark-badge-tag">Detected GSD:</span>
+                            {geotiff_meta.gsd_x_m:.4f} × {geotiff_meta.gsd_y_m:.4f} m/px &nbsp;|&nbsp; 
+                            <strong>Source:</strong> GeoTIFF metadata &nbsp;|&nbsp; 
+                            <strong>CRS:</strong> {geotiff_meta.crs}
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
                     user_gsd = None
                 else:
-                    st.warning("TIFF has no geotransform. Manual GSD required.")
-                    user_gsd = st.number_input("Manual GSD (m/px)", min_value=0.001, max_value=10.0, value=0.10, step=0.01, format="%.3f")
+                    st.warning("GeoTIFF has no embedded geotransform. Manual GSD is required.")
+                    user_gsd = st.number_input(
+                        "GROUND SAMPLING DISTANCE (M/PX)",
+                        min_value=0.001,
+                        max_value=10.0,
+                        value=0.10,
+                        step=0.01,
+                        format="%.3f",
+                        help="User-supplied spatial resolution."
+                    )
+                    st.caption("Provenance: User-supplied spatial resolution")
             except Exception:
-                user_gsd = st.number_input("Manual GSD (m/px)", min_value=0.001, max_value=10.0, value=0.10, step=0.01, format="%.3f")
+                user_gsd = st.number_input(
+                    "GROUND SAMPLING DISTANCE (M/PX)",
+                    min_value=0.001,
+                    max_value=10.0,
+                    value=0.10,
+                    step=0.01,
+                    format="%.3f",
+                    help="User-supplied spatial resolution."
+                )
+                st.caption("Provenance: User-supplied spatial resolution")
         elif image_bytes:
-            st.info("Standard image without embedded CRS. Manual GSD required.")
             user_gsd = st.number_input(
-                "Manual GSD (m/px)",
+                "GROUND SAMPLING DISTANCE (M/PX)",
                 min_value=0.001,
                 max_value=10.0,
                 value=float(user_gsd or 0.10),
                 step=0.01,
-                format="%.3f"
+                format="%.3f",
+                help="User-supplied spatial resolution."
             )
-            st.caption("Provenance: User-supplied GSD")
-        else:
-            st.caption("Awaiting imagery input...")
+            st.caption("Provenance: User-supplied spatial resolution")
 
-        st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
-        st.markdown('<div class="sidebar-sec-title">DETECTION</div>', unsafe_allow_html=True)
+    # If GeoTIFF metadata not read yet, read it
+    if image_bytes and image_name.lower().endswith((".tif", ".tiff")) and geotiff_meta is None:
+        try:
+            geotiff_meta = read_geotiff_metadata(image_bytes)
+        except Exception:
+            geotiff_meta = None
+
+    # Control parameters row
+    col_conf, col_tile = st.columns(2)
+    with col_conf:
         confidence_threshold = st.slider(
-            "Confidence threshold",
-            min_value=0.10,
-            max_value=0.95,
+            "CONFIDENCE THRESHOLD",
+            min_value=0.05,
+            max_value=0.90,
             value=0.20,
             step=0.05,
             help="Minimum detector score threshold."
         )
-
-        patch_size = st.select_slider(
-            "Tiling window (px)",
-            options=[200, 300, 400, 600, 800],
+    with col_tile:
+        patch_size = st.slider(
+            "TILING WINDOW (PX)",
+            min_value=200,
+            max_value=1200,
             value=400,
-            help="Window size for sliding-window inference."
+            step=50,
+            help="Window size for sliding-window inference across the image."
         )
 
-        st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
-        st.markdown('<div class="sidebar-sec-title">RUN ANALYSIS</div>', unsafe_allow_html=True)
-        run_analysis_clicked = st.button("RUN FOREST ANALYSIS", type="primary", use_container_width=True)
+    # Prominent Centered Primary Button
+    col_btn_l, col_btn_c, col_btn_r = st.columns([1.2, 1.6, 1.2])
+    with col_btn_c:
+        run_analysis_clicked = st.button("ANALYZE FOREST", type="primary", use_container_width=True)
 
     # -------------------------------------------------------------------------
     # 3. INPUT VALIDATION STATUS PANEL
@@ -667,10 +865,10 @@ def main():
         val_gsd = False
         gsd_label = "Missing"
         if val_image:
-            fix_reasons.append("Provide a valid GSD (meters/pixel) in the sidebar.")
+            fix_reasons.append("Provide a valid GSD (meters/pixel) for standard imagery.")
 
     if not val_image:
-        fix_reasons.append("Select a demo dataset or upload an aerial image.")
+        fix_reasons.append("Select a demo dataset or upload forest imagery.")
 
     # AOI Overlap evaluation
     if val_image and val_boundary and geotiff_meta and geotiff_meta.has_georeference:
@@ -702,7 +900,7 @@ def main():
 
     ready_for_analysis = val_image and val_gsd and val_overlap
 
-    # Render Compact Validation Card (FIX 7)
+    # Render Compact Validation Card
     status_badge = (
         '<span class="val-badge-ready">READY FOR ANALYSIS</span>'
         if ready_for_analysis else
@@ -787,7 +985,7 @@ def main():
                 return
 
     # -------------------------------------------------------------------------
-    # 5. RESULTS DASHBOARD (VISUAL CENTERPIECE)
+    # 5. RESULTS DASHBOARD (FULL WIDTH)
     # -------------------------------------------------------------------------
     if "result" in st.session_state:
         result: PipelineResult = st.session_state["result"]
@@ -802,7 +1000,7 @@ def main():
             unsafe_allow_html=True
         )
 
-        # Six Professional KPI Cards (Never Truncated)
+        # Six Professional KPI Cards
         forest_area_str = f"{m.forest_area_m2:,.1f} m²" if m.forest_area_m2 else "Full Raster"
         forest_ha_str = f"{m.forest_area_ha:.4f} ha" if m.forest_area_ha else "Entire Extent"
         unique_canopy_str = f"{m.unique_canopy_area_m2:,.1f} m²"
@@ -848,7 +1046,7 @@ def main():
         )
 
         # ---------------------------------------------------------------------
-        # 6. CROWN DETECTION MAP (DOMINANT VISUAL ELEMENT)
+        # 6. CROWN DETECTION MAP CENTERPIECE (650PX HEIGHT)
         # ---------------------------------------------------------------------
         st.markdown(
             """
@@ -859,9 +1057,15 @@ def main():
         )
 
         if result.metadata.has_georeference and result.metadata.bounds:
-            bounds = result.metadata.bounds
-            center_lat = (bounds[1] + bounds[3]) / 2.0
-            center_lon = (bounds[0] + bounds[2]) / 2.0
+            if result.aoi_wgs84_geom and not result.aoi_wgs84_geom.is_empty:
+                center_lat = float(result.aoi_wgs84_geom.centroid.y)
+                center_lon = float(result.aoi_wgs84_geom.centroid.x)
+            else:
+                from pyproj import Transformer
+                cx = (result.metadata.bounds[0] + result.metadata.bounds[2]) / 2.0
+                cy = (result.metadata.bounds[1] + result.metadata.bounds[3]) / 2.0
+                transformer = Transformer.from_crs(result.metadata.crs or "EPSG:32617", "EPSG:4326", always_xy=True)
+                center_lon, center_lat = transformer.transform(cx, cy)
 
             crown_areas = [d.approx_area_m2(m.gsd_m) for d in result.detections]
             tree_ids = [d.detection_id for d in result.detections]
@@ -879,7 +1083,7 @@ def main():
             )
             if folium_map:
                 from streamlit_folium import st_folium
-                st_folium(folium_map, width=1200, height=560)
+                st_folium(folium_map, width=1380, height=650)
         else:
             st.markdown("##### High-Resolution Local Detections")
             annotated_img = overlay_detections_on_image(
@@ -894,42 +1098,68 @@ def main():
             )
 
         # ---------------------------------------------------------------------
-        # 7. DETECTION INSPECTION & ANALYSIS QUALITY
-        # -------------------------------------------------------------------------
-        col_inspect, col_quality = st.columns([3, 2])
+        # 7. ANALYTICS SECTION (PLOTLY CHARTS SIDE BY SIDE)
+        # ---------------------------------------------------------------------
+        st.markdown(
+            """
+            <div class="section-title">ANALYTICS</div>
+            <div class="section-sub">Crown size and detection confidence distributions</div>
+            """,
+            unsafe_allow_html=True
+        )
 
-        with col_inspect:
-            st.markdown(
-                """
-                <div class="section-title" style="font-size: 1.05rem; margin-top: 10px;">DETECTION INSPECTION</div>
-                <div class="section-sub">Tabular record of individual tree crown detections.</div>
-                """,
-                unsafe_allow_html=True
-            )
-            if result.detections:
-                rows = []
-                for d in result.detections:
-                    if d.geometry_geo and hasattr(d.geometry_geo, 'centroid'):
-                        loc_str = f"{d.geometry_geo.centroid.y:.5f}°, {d.geometry_geo.centroid.x:.5f}°"
-                    else:
-                        loc_str = f"px ({int(d.center_pixel[0])}, {int(d.center_pixel[1])})"
+        crown_areas_all = [d.approx_area_m2(m.gsd_m) for d in result.detections]
+        confidences_all = [d.confidence for d in result.detections]
 
-                    rows.append({
-                        "Tree ID": d.detection_id,
-                        "Confidence": f"{d.confidence:.1%}",
-                        "Crown Area": f"{d.approx_area_m2(m.gsd_m):.2f} m²",
-                        "Location": loc_str
-                    })
-                df_crowns = pd.DataFrame(rows)
-                st.dataframe(df_crowns, use_container_width=True, height=280)
-            else:
-                st.info("No crowns detected above threshold.")
+        col_ch1, col_ch2 = st.columns(2)
+        with col_ch1:
+            fig_size = plot_crown_size_distribution_dark(crown_areas_all)
+            if fig_size:
+                st.plotly_chart(fig_size, use_container_width=True)
+        with col_ch2:
+            fig_conf = plot_detection_confidence_dark(confidences_all)
+            if fig_conf:
+                st.plotly_chart(fig_conf, use_container_width=True)
+
+        # ---------------------------------------------------------------------
+        # 8. DETECTION INSPECTION TABLE
+        # ---------------------------------------------------------------------
+        st.markdown(
+            """
+            <div class="section-title">DETECTION INSPECTION</div>
+            <div class="section-sub">Tabular record of individual tree crown detections.</div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        if result.detections:
+            rows = []
+            for d in result.detections:
+                area_val = d.approx_area_m2(m.gsd_m)
+                # Approximate equivalent circular diameter: d = 2 * sqrt(Area / pi)
+                approx_diam_m = 2.0 * math.sqrt(max(0.0, area_val) / math.pi) if area_val > 0 else 0.0
+
+                rows.append({
+                    "Tree ID": d.detection_id,
+                    "Crown Area (m²)": f"{area_val:.2f}",
+                    "Confidence Score": f"{d.confidence:.3f}",
+                    "Approx Diameter (m)": f"{approx_diam_m:.2f}"
+                })
+            df_crowns = pd.DataFrame(rows)
+            st.dataframe(df_crowns, use_container_width=True, height=280)
+        else:
+            st.info("No crowns detected above threshold.")
+
+        # ---------------------------------------------------------------------
+        # 9. QUALITY & INTERPRETATION AND MODEL LIMITATIONS (SIDE BY SIDE)
+        # ---------------------------------------------------------------------
+        col_quality, col_limits = st.columns(2)
 
         with col_quality:
             st.markdown(
                 """
-                <div class="section-title" style="font-size: 1.05rem; margin-top: 10px;">ANALYSIS QUALITY</div>
-                <div class="section-sub">Sensor provenance and geometric integrity.</div>
+                <div class="section-title" style="font-size: 0.96rem;">QUALITY & INTERPRETATION</div>
+                <div class="section-sub">Sensor provenance, projection and geometric integrity.</div>
                 """,
                 unsafe_allow_html=True
             )
@@ -938,40 +1168,62 @@ def main():
                 f"""
                 <div class="quality-card">
                     <div class="quality-row">
-                        <span class="quality-key">GSD provenance</span>
+                        <span class="quality-key">GSD Provenance</span>
                         <span class="quality-val">✓ Verified ({m.gsd_source})</span>
                     </div>
                     <div class="quality-row">
-                        <span class="quality-key">Coordinate reference</span>
+                        <span class="quality-key">Coordinate Reference</span>
                         <span class="quality-val">✓ Metric ({m.crs})</span>
                     </div>
                     <div class="quality-row">
-                        <span class="quality-key">AOI alignment</span>
+                        <span class="quality-key">AOI Alignment</span>
                         <span class="quality-val">✓ Verified</span>
                     </div>
                     <div class="quality-row">
-                        <span class="quality-key">Detection threshold</span>
+                        <span class="quality-key">Detection Threshold</span>
                         <span class="quality-val">{m.confidence_threshold:.2f}</span>
                     </div>
                     <div class="quality-row">
-                        <span class="quality-key">Low-confidence count</span>
+                        <span class="quality-key">Low-Confidence Count</span>
                         <span class="quality-val">{m.low_confidence_count} crowns (< 0.40)</span>
                     </div>
                     <div class="quality-row">
-                        <span class="quality-key">Overlap redundancy</span>
+                        <span class="quality-key">Overlap Redundancy</span>
                         <span class="quality-val">{overlap_pct_str}</span>
                     </div>
                     <div class="quality-row">
-                        <span class="quality-key">Crown geometry</span>
-                        <span class="quality-val">Inscribed ellipse approx.</span>
+                        <span class="quality-key">Crown Geometry</span>
+                        <span class="quality-val">Inscribed Ellipse Approx.</span>
                     </div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
 
+        with col_limits:
+            st.markdown(
+                """
+                <div class="section-title" style="font-size: 0.96rem;">MODEL LIMITATIONS</div>
+                <div class="section-sub">Environmental, optical and allometric constraints.</div>
+                """,
+                unsafe_allow_html=True
+            )
+            st.markdown(
+                """
+                <div class="limitations-card">
+                    <div class="limitations-item"><span class="limitations-bullet">•</span><strong>Model Predictions:</strong> Detections are neural model inferences, not direct ground-truth field surveys.</div>
+                    <div class="limitations-item"><span class="limitations-bullet">•</span><strong>Interlocking Canopy:</strong> Dense or touching crowns may be merged into single detection envelopes.</div>
+                    <div class="limitations-item"><span class="limitations-bullet">•</span><strong>Canopy Shadows:</strong> Deep cast shadows can create false negatives in lower understory layers.</div>
+                    <div class="limitations-item"><span class="limitations-bullet">•</span><strong>Understory Saplings:</strong> Smaller juvenile trees are occluded by dominant overstory crowns.</div>
+                    <div class="limitations-item"><span class="limitations-bullet">•</span><strong>Geometric Approximation:</strong> Crown boundaries are modeled as inscribed ellipses, not full instance segmentations.</div>
+                    <div class="limitations-item"><span class="limitations-bullet">•</span><strong>Not Biomass / Not Carbon:</strong> Optical horizontal canopy area does not measure wood density, tree height, or trunk volume. Field allometry and independent auditing are required for carbon accounting.</div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
         # ---------------------------------------------------------------------
-        # 8. METHODOLOGY & SCIENTIFIC FOUNDATION
+        # 10. METHODOLOGY PIPELINE
         # ---------------------------------------------------------------------
         st.markdown(
             """
@@ -1024,26 +1276,8 @@ def main():
         )
 
         # ---------------------------------------------------------------------
-        # 9. METHOD LIMITATIONS & INTERPRETATION (COLLAPSIBLE)
-        # ---------------------------------------------------------------------
-        with st.expander("Method limitations & interpretation", expanded=False):
-            st.markdown(
-                """
-                - **DeepForest detections are model predictions**, not direct ground-truth field surveys.
-                - **Dense or interlocking tree crowns** can be missed or merged into single larger bounding boxes.
-                - **Canopy shadows** may create false negatives in understory vegetation.
-                - **Small saplings or understory crowns** may be missed depending on sensor ground sample distance (GSD).
-                - **Crown areas are geometric approximations** derived as inscribed ellipses from 2D detector bounding boxes, not full instance segmentations.
-                - **Canopy cover is NOT biomass:** Optical horizontal canopy area does not measure wood density, tree height, or trunk volume.
-                - **Canopy cover is NOT carbon stock:** Carbon accounting requires 3D allometry, calibrated field plots, and third-party audit.
-                - **Results require field validation** before operational carbon accounting or commercial carbon crediting.
-                """
-            )
-            st.caption(m.carbon_disclaimer)
-
-        # ---------------------------------------------------------------------
-        # 10. EXPORT ANALYSIS
-        # ---------------------------------------------------------------------
+        # 11. EXPORT ANALYSIS (CENTERED DOWNLOAD BUTTONS)
+        # -------------------------------------------------------------------------
         st.markdown(
             """
             <div class="section-title">EXPORT ANALYSIS</div>
@@ -1058,7 +1292,7 @@ def main():
         if csv_path and Path(csv_path).exists():
             with open(csv_path, "rb") as f:
                 exp_c1.download_button(
-                    label="Download CSV",
+                    label="CSV",
                     data=f.read(),
                     file_name="forest_crown_detections.csv",
                     mime="text/csv",
@@ -1069,7 +1303,7 @@ def main():
         if geojson_path and Path(geojson_path).exists():
             with open(geojson_path, "rb") as f:
                 exp_c2.download_button(
-                    label="Download GeoJSON",
+                    label="GeoJSON",
                     data=f.read(),
                     file_name="forest_crown_geometries.geojson",
                     mime="application/geo+json",
@@ -1080,7 +1314,7 @@ def main():
         if kml_path and Path(kml_path).exists():
             with open(kml_path, "rb") as f:
                 exp_c3.download_button(
-                    label="Download KML",
+                    label="KML",
                     data=f.read(),
                     file_name="forest_crowns_google_earth.kml",
                     mime="application/vnd.google-earth.kml+xml",
@@ -1089,7 +1323,7 @@ def main():
 
         summary_text = generate_summary_report(result, img_name)
         exp_c4.download_button(
-            label="Download Analysis Report",
+            label="SUMMARY REPORT",
             data=summary_text,
             file_name="canopy_analysis_report.md",
             mime="text/markdown",
@@ -1097,14 +1331,14 @@ def main():
         )
 
     else:
-        # FIX 8: Compact Ready for Analysis Callout (Before Analysis)
+        # Compact Ready for Analysis Callout (Before Analysis)
         st.markdown(
             """
             <div class="ready-callout">
                 <div class="callout-badge">READY FOR ANALYSIS</div>
                 <div class="callout-content">
                     <div class="callout-title">Demo imagery and forest boundary validated successfully.</div>
-                    <div class="callout-sub">Click <strong>Run Forest Analysis</strong> in the sidebar to execute DeepForest neural detection, inscribed crown modeling, and continuous canopy footprint dissolution.</div>
+                    <div class="callout-sub">Click <strong>ANALYZE FOREST</strong> above to execute DeepForest neural detection, inscribed crown modeling, and continuous canopy footprint dissolution.</div>
                 </div>
             </div>
             """,
@@ -1112,7 +1346,7 @@ def main():
         )
 
     # -------------------------------------------------------------------------
-    # 11. SUBTLE PROFESSIONAL FOOTER
+    # 12. PROFESSIONAL FOOTER
     # -------------------------------------------------------------------------
     st.markdown(
         """
