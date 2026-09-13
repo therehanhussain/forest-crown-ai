@@ -50,293 +50,396 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* Global Typography & Palette */
-    html, body, [class*="css"] {
+    /* Global Reset & Dark Charcoal/Slate Canvas */
+    html, body, [class*="css"], .stApp {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        color: #0F172A;
+        background-color: #0B0F19 !important;
+        color: #F1F5F9;
+    }
+    header[data-testid="stHeader"] {
+        background-color: #0B0F19 !important;
     }
     
-    /* Main App Header */
-    .brand-title {
-        font-size: 1.85rem;
-        font-weight: 800;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        color: #0F172A;
-        margin-bottom: 2px;
-        line-height: 1.2;
-    }
-    .brand-subtitle {
-        font-size: 1.05rem;
-        font-weight: 500;
-        color: #334155;
-        margin-bottom: 6px;
-    }
-    .brand-tagline {
-        font-size: 0.92rem;
-        color: #64748B;
-        margin-bottom: 16px;
-    }
-    
-    /* Compact Workflow Step Indicator */
-    .workflow-bar {
-        display: flex;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 8px;
-        background: #F8FAFC;
-        border: 1px solid #E2E8F0;
-        border-radius: 6px;
-        padding: 8px 14px;
-        margin-bottom: 24px;
-        font-size: 0.78rem;
-        font-weight: 700;
-        letter-spacing: 0.06em;
-        color: #475569;
-    }
-    .workflow-step {
-        display: inline-flex;
-        align-items: center;
-        color: #0F172A;
-    }
-    .workflow-arrow {
-        color: #94A3B8;
-        margin: 0 4px;
-    }
-
-    /* Professional Sidebar Panel */
+    /* Sidebar Dark Slate Surface & Tight Spacing */
     section[data-testid="stSidebar"] {
-        background-color: #F8FAFC;
-        border-right: 1px solid #E2E8F0;
+        background-color: #0F172A !important;
+        border-right: 1px solid #1E293B !important;
     }
-    section[data-testid="stSidebar"] h2, section[data-testid="stSidebar"] h3 {
-        font-size: 0.82rem !important;
+    section[data-testid="stSidebar"] div[data-testid="stVerticalBlock"] {
+        gap: 0.35rem !important;
+    }
+    .sidebar-sec-title {
+        font-size: 0.72rem !important;
         font-weight: 700 !important;
         letter-spacing: 0.08em !important;
         text-transform: uppercase !important;
-        color: #475569 !important;
-        margin-top: 14px !important;
-        margin-bottom: 8px !important;
+        color: #94A3B8 !important;
+        margin-top: 10px !important;
+        margin-bottom: 4px !important;
+    }
+    .sidebar-divider {
+        border-top: 1px solid #1E293B;
+        margin: 8px 0 6px 0;
+    }
+
+    /* FIX 1: Data Source radio buttons MUST have completely visible labels */
+    div[data-testid="stRadio"] div[role="radiogroup"] label {
+        display: flex !important;
+        align-items: center !important;
+        cursor: pointer !important;
+        gap: 8px !important;
+        margin-bottom: 4px !important;
+    }
+    div[data-testid="stRadio"] div[role="radiogroup"] label p,
+    div[data-testid="stRadio"] div[role="radiogroup"] label span,
+    div[data-testid="stRadio"] div[role="radiogroup"] [data-testid="stMarkdownContainer"] p {
+        color: #F8FAFC !important;
+        font-size: 0.86rem !important;
+        font-weight: 500 !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        display: inline-block !important;
+        margin: 0 !important;
+    }
+
+    /* Sliders: Forest Green Accent */
+    div[data-testid="stSlider"] div[data-baseweb="slider"] div[role="slider"] {
+        background-color: #2D6A4F !important;
+        border-color: #1B4332 !important;
+    }
+
+    /* Sidebar inputs, sliders, captions */
+    section[data-testid="stSidebar"] .stCaption,
+    section[data-testid="stSidebar"] p {
+        color: #94A3B8 !important;
+        font-size: 0.80rem !important;
     }
 
     /* Primary CTA Button (Refined Deep Forest Green) */
     div.stButton > button[kind="primary"] {
         background-color: #1B4332 !important;
         color: #FFFFFF !important;
-        border: 1px solid #143628 !important;
+        border: 1px solid #2D6A4F !important;
         border-radius: 6px !important;
-        font-weight: 600 !important;
-        font-size: 0.92rem !important;
-        letter-spacing: 0.03em !important;
-        padding: 0.55rem 1.2rem !important;
-        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08) !important;
+        font-weight: 700 !important;
+        font-size: 0.86rem !important;
+        letter-spacing: 0.05em !important;
+        padding: 0.50rem 1rem !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
         transition: all 0.15s ease-in-out !important;
+        text-transform: uppercase !important;
     }
     div.stButton > button[kind="primary"]:hover {
         background-color: #2D6A4F !important;
-        border-color: #2D6A4F !important;
+        border-color: #40916C !important;
         color: #FFFFFF !important;
     }
     
     /* Secondary & Download Buttons */
     div.stDownloadButton > button {
-        background-color: #FFFFFF !important;
-        color: #0F172A !important;
-        border: 1px solid #CBD5E1 !important;
+        background-color: #1E293B !important;
+        color: #F1F5F9 !important;
+        border: 1px solid #334155 !important;
         border-radius: 6px !important;
         font-weight: 600 !important;
-        font-size: 0.85rem !important;
-        padding: 0.45rem 1rem !important;
+        font-size: 0.82rem !important;
+        padding: 0.45rem 0.85rem !important;
         transition: all 0.15s ease-in-out !important;
     }
     div.stDownloadButton > button:hover {
-        border-color: #1B4332 !important;
-        color: #1B4332 !important;
-        background-color: #F8FAFC !important;
+        border-color: #2D6A4F !important;
+        color: #A7F3D0 !important;
+        background-color: #143628 !important;
     }
 
-    /* Compact Validation Panel */
-    .validation-panel {
-        background: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        border-radius: 8px;
-        padding: 14px 18px;
-        margin-bottom: 24px;
-        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+    /* FIX 5: Hero - Compact, Premium */
+    .hero-container {
+        padding: 2px 0 10px 0;
+        margin-bottom: 6px;
     }
-    .val-title {
-        font-size: 0.78rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
+    .hero-title {
+        font-size: 1.75rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
         text-transform: uppercase;
-        color: #64748B;
-        margin-bottom: 10px;
+        color: #F8FAFC;
+        line-height: 1.15;
+        margin-bottom: 3px;
     }
-    .val-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-        gap: 12px;
+    .hero-subtitle {
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: #94A3B8;
+        margin-bottom: 4px;
+        line-height: 1.35;
+    }
+    .hero-tagline {
+        font-size: 0.84rem;
+        font-style: italic;
+        color: #64748B;
+        line-height: 1.35;
+    }
+
+    /* FIX 6: Subtle, Elegant Workflow Stepper */
+    .workflow-bar {
+        display: inline-flex;
         align-items: center;
-    }
-    .val-item {
-        display: flex;
-        flex-direction: column;
-    }
-    .val-label {
-        font-size: 0.72rem;
+        flex-wrap: wrap;
+        gap: 6px;
+        background: #111827;
+        border: 1px solid #1F2937;
+        border-radius: 6px;
+        padding: 6px 12px;
+        margin-bottom: 16px;
+        font-size: 0.74rem;
         font-weight: 600;
-        color: #64748B;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-bottom: 2px;
+        letter-spacing: 0.06em;
     }
-    .val-value {
-        font-size: 0.88rem;
-        font-weight: 600;
-        color: #0F172A;
+    .workflow-step {
+        color: #CBD5E1;
     }
-    .val-status-ready {
-        display: inline-block;
-        background: #ECFDF5;
-        color: #065F46;
-        border: 1px solid #A7F3D0;
-        padding: 4px 10px;
-        border-radius: 4px;
-        font-size: 0.75rem;
-        font-weight: 700;
-        letter-spacing: 0.05em;
-        text-align: center;
-    }
-    .val-status-blocked {
-        display: inline-block;
-        background: #FEF2F2;
-        color: #991B1B;
-        border: 1px solid #FECACA;
-        padding: 4px 10px;
-        border-radius: 4px;
-        font-size: 0.75rem;
-        font-weight: 700;
-        letter-spacing: 0.05em;
-        text-align: center;
+    .workflow-arrow {
+        color: #4B5563;
+        font-size: 0.70rem;
     }
 
-    /* Six Responsive KPI Cards (Zero Truncation Guarantee) */
-    .kpi-container {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 14px;
-        margin-top: 14px;
-        margin-bottom: 24px;
-    }
-    .kpi-card {
+    /* FIX 7: Compact Validation Card */
+    .validation-card {
         background: #FFFFFF;
         border: 1px solid #E2E8F0;
-        border-radius: 8px;
-        padding: 16px 18px;
-        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
+        border-radius: 6px;
+        padding: 10px 16px;
+        margin-bottom: 14px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
     }
-    .kpi-label {
-        font-size: 0.72rem;
+    .val-header {
+        font-size: 0.68rem;
         font-weight: 700;
         letter-spacing: 0.08em;
         text-transform: uppercase;
         color: #64748B;
         margin-bottom: 6px;
+    }
+    .val-grid {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 8px;
+        align-items: center;
+    }
+    @media (max-width: 960px) {
+        .val-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+    .val-col {
+        display: flex;
+        flex-direction: column;
+    }
+    .val-lbl {
+        font-size: 0.66rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #64748B;
+        margin-bottom: 2px;
+    }
+    .val-txt {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #0F172A;
+    }
+    .val-badge-ready {
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        color: #065F46;
+        background: #ECFDF5;
+        border: 1px solid #A7F3D0;
+        padding: 3px 6px;
+        border-radius: 4px;
+        text-align: center;
+        white-space: nowrap;
+        display: inline-block;
+    }
+    .val-badge-blocked {
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        color: #991B1B;
+        background: #FEF2F2;
+        border: 1px solid #FECACA;
+        padding: 3px 6px;
+        border-radius: 4px;
+        text-align: center;
+        white-space: nowrap;
+        display: inline-block;
+    }
+
+    /* FIX 8: Compact Ready for Analysis Callout */
+    .ready-callout {
+        background: #F0FDF4;
+        border: 1px solid #BBF7D0;
+        border-left: 4px solid #16A34A;
+        border-radius: 6px;
+        padding: 12px 16px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+    .callout-badge {
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        color: #166534;
+        background: #DCFCE7;
+        padding: 4px 10px;
+        border-radius: 4px;
+        white-space: nowrap;
+    }
+    .callout-content {
+        display: flex;
+        flex-direction: column;
+    }
+    .callout-title {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: #14532D;
+    }
+    .callout-sub {
+        font-size: 0.80rem;
+        color: #15803D;
+        margin-top: 2px;
+    }
+
+    /* FIX 11: Six Responsive KPI Cards (Zero Truncation Guarantee) */
+    .kpi-container {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 12px;
+        margin-top: 10px;
+        margin-bottom: 20px;
+    }
+    @media (max-width: 1350px) {
+        .kpi-container {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+    @media (max-width: 768px) {
+        .kpi-container {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+    .kpi-card {
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 6px;
+        padding: 12px 14px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .kpi-label {
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #64748B;
+        margin-bottom: 4px;
         white-space: normal;
-        line-height: 1.3;
+        line-height: 1.25;
     }
     .kpi-value {
-        font-size: 1.65rem;
+        font-size: 1.45rem;
         font-weight: 800;
         color: #0F172A;
         line-height: 1.15;
         font-feature-settings: 'tnum' on, 'lnum' on;
     }
     .kpi-sub {
-        font-size: 0.82rem;
+        font-size: 0.74rem;
         font-weight: 600;
         color: #059669;
-        margin-top: 4px;
+        margin-top: 3px;
     }
 
-    /* Section Headers */
+    /* FIX 12: Clean Map and Section Headings */
     .section-title {
-        font-size: 1.15rem;
+        font-size: 1.05rem;
         font-weight: 700;
         letter-spacing: 0.04em;
         text-transform: uppercase;
-        color: #0F172A;
-        margin-top: 24px;
+        color: #F8FAFC;
+        margin-top: 20px;
         margin-bottom: 2px;
     }
     .section-sub {
-        font-size: 0.88rem;
-        color: #64748B;
-        margin-bottom: 14px;
+        font-size: 0.82rem;
+        color: #94A3B8;
+        margin-bottom: 12px;
     }
 
-    /* Quality Grid */
+    /* Quality Grid (White Floating Card) */
     .quality-card {
         background: #FFFFFF;
         border: 1px solid #E2E8F0;
-        border-radius: 8px;
-        padding: 18px 20px;
-        margin-bottom: 24px;
+        border-radius: 6px;
+        padding: 14px 18px;
+        margin-bottom: 20px;
     }
     .quality-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 8px 0;
+        padding: 6px 0;
         border-bottom: 1px solid #F1F5F9;
-        font-size: 0.86rem;
+        font-size: 0.84rem;
     }
     .quality-row:last-child {
         border-bottom: none;
     }
     .quality-key {
         font-weight: 600;
-        color: #475569;
+        color: #64748B;
     }
     .quality-val {
         font-weight: 600;
         color: #0F172A;
     }
 
-    /* Methodology Card */
+    /* Methodology Grid (White Floating Cards) */
     .method-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 12px;
-        margin-top: 10px;
-        margin-bottom: 24px;
+        gap: 10px;
+        margin-top: 8px;
+        margin-bottom: 20px;
     }
     .method-step {
         background: #FFFFFF;
         border: 1px solid #E2E8F0;
         border-radius: 6px;
         padding: 12px 14px;
-        font-size: 0.84rem;
+        font-size: 0.82rem;
         line-height: 1.4;
+        color: #334155;
     }
     .method-num {
-        font-size: 0.72rem;
+        font-size: 0.70rem;
         font-weight: 700;
         letter-spacing: 0.06em;
         color: #059669;
-        margin-bottom: 4px;
+        margin-bottom: 3px;
         text-transform: uppercase;
     }
     
-    /* Footer */
+    /* Subtle Professional Footer */
     .app-footer {
-        margin-top: 48px;
-        padding-top: 20px;
-        border-top: 1px solid #E2E8F0;
-        font-size: 0.80rem;
+        margin-top: 40px;
+        padding-top: 18px;
+        border-top: 1px solid #1E293B;
+        font-size: 0.78rem;
         color: #64748B;
         display: flex;
         justify-content: space-between;
@@ -398,13 +501,15 @@ def generate_summary_report(result: PipelineResult, image_filename: str) -> str:
 
 def main():
     # -------------------------------------------------------------------------
-    # 1. PRODUCT HEADER & COMPACT WORKFLOW
+    # 1. PRODUCT HERO & COMPACT WORKFLOW (FIX 5 & FIX 6)
     # -------------------------------------------------------------------------
     st.markdown(
         """
-        <div class="brand-title">FOREST CROWN AI</div>
-        <div class="brand-subtitle">Individual tree crown detection and canopy measurement from high-resolution imagery.</div>
-        <div class="brand-tagline">Turn high-resolution forest imagery into measurable crown-level intelligence.</div>
+        <div class="hero-container">
+            <div class="hero-title">FOREST CROWN AI</div>
+            <div class="hero-subtitle">Individual tree crown detection and canopy measurement from high-resolution imagery.</div>
+            <div class="hero-tagline">"Turn high-resolution forest imagery into measurable crown-level intelligence."</div>
+        </div>
         <div class="workflow-bar">
             <span class="workflow-step">01 DATA</span>
             <span class="workflow-arrow">→</span>
@@ -421,14 +526,14 @@ def main():
     )
 
     # -------------------------------------------------------------------------
-    # 2. SIDEBAR ANALYSIS CONTROL PANEL
+    # 2. SIDEBAR ANALYSIS CONTROL PANEL (FIX 1, FIX 2, FIX 3, FIX 9)
     # -------------------------------------------------------------------------
     with st.sidebar:
-        st.markdown("### DATA SOURCE")
+        st.markdown('<div class="sidebar-sec-title" style="margin-top: 0;">DATA SOURCE</div>', unsafe_allow_html=True)
 
         data_source_mode = st.radio(
-            "Data Input Mode",
-            options=["Demo dataset", "Upload custom imagery"],
+            "DATA SOURCE",
+            options=["Built-in Demo Dataset", "Upload Custom Files"],
             index=0,
             label_visibility="collapsed"
         )
@@ -438,16 +543,18 @@ def main():
         image_name: str = ""
         user_gsd: Optional[float] = None
 
-        if data_source_mode == "Demo dataset":
+        if data_source_mode == "Built-in Demo Dataset":
             demo_choice = st.selectbox(
                 "Select Demo Dataset",
                 options=[
-                    "Sample 1: Georeferenced Forest (GeoTIFF + KML AOI)",
-                    "Sample 2: Aerial Photo (Standard PNG)"
+                    "Ordway-Swisher Forest Demo",
+                    "Aerial Photo Demo (PNG)"
                 ],
-                index=0
+                index=0,
+                label_visibility="collapsed",
+                help="Select pre-loaded demonstration forest imagery."
             )
-            if demo_choice.startswith("Sample 1"):
+            if demo_choice == "Ordway-Swisher Forest Demo":
                 tif_path = Path("demo_data/sample_forest_utm17n.tif")
                 kml_path = Path("demo_data/sample_boundary.kml")
                 if tif_path.exists():
@@ -455,14 +562,14 @@ def main():
                     image_name = tif_path.name
                 if kml_path.exists():
                     aoi_bytes = kml_path.read_bytes()
-                st.caption("Ordway-Swisher Biological Station (UTM 17N) with KML AOI.")
+                st.caption("Ordway-Swisher Station (UTM 17N) • GeoTIFF + KML AOI")
             else:
                 png_path = Path("demo_data/sample_aerial_photo.png")
                 if png_path.exists():
                     image_bytes = png_path.read_bytes()
                     image_name = png_path.name
                 user_gsd = 0.10
-                st.caption("Standard RGB aerial photo. Calibrated GSD = 0.100 m/px.")
+                st.caption("RGB Aerial Photo • Calibrated GSD = 0.100 m/px")
         else:
             uploaded_image = st.file_uploader(
                 "Upload Imagery (GeoTIFF, PNG, JPG)",
@@ -480,8 +587,8 @@ def main():
             if uploaded_aoi:
                 aoi_bytes = uploaded_aoi.getvalue()
 
-        st.markdown("---")
-        st.markdown("### SPATIAL RESOLUTION")
+        st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
+        st.markdown('<div class="sidebar-sec-title">SPATIAL RESOLUTION</div>', unsafe_allow_html=True)
 
         geotiff_meta = None
         if image_bytes and image_name.lower().endswith((".tif", ".tiff")):
@@ -511,8 +618,8 @@ def main():
         else:
             st.caption("Awaiting imagery input...")
 
-        st.markdown("---")
-        st.markdown("### DETECTION")
+        st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
+        st.markdown('<div class="sidebar-sec-title">DETECTION</div>', unsafe_allow_html=True)
         confidence_threshold = st.slider(
             "Confidence threshold",
             min_value=0.10,
@@ -529,9 +636,9 @@ def main():
             help="Window size for sliding-window inference."
         )
 
-        st.markdown("---")
-        st.markdown("### RUN ANALYSIS")
-        run_analysis_clicked = st.button("Run Forest Analysis", type="primary", use_container_width=True)
+        st.markdown('<div class="sidebar-divider"></div>', unsafe_allow_html=True)
+        st.markdown('<div class="sidebar-sec-title">RUN ANALYSIS</div>', unsafe_allow_html=True)
+        run_analysis_clicked = st.button("RUN FOREST ANALYSIS", type="primary", use_container_width=True)
 
     # -------------------------------------------------------------------------
     # 3. INPUT VALIDATION STATUS PANEL
@@ -595,41 +702,41 @@ def main():
 
     ready_for_analysis = val_image and val_gsd and val_overlap
 
-    # Render Compact Validation Panel
-    status_html = (
-        '<span class="val-status-ready">READY FOR ANALYSIS</span>'
+    # Render Compact Validation Card (FIX 7)
+    status_badge = (
+        '<span class="val-badge-ready">READY FOR ANALYSIS</span>'
         if ready_for_analysis else
-        '<span class="val-status-blocked">ACTION REQUIRED</span>'
+        '<span class="val-badge-blocked">ACTION REQUIRED</span>'
     )
 
     st.markdown(
         f"""
-        <div class="validation-panel">
-            <div class="val-title">Input Validation</div>
+        <div class="validation-card">
+            <div class="val-header">INPUT VALIDATION</div>
             <div class="val-grid">
-                <div class="val-item">
-                    <span class="val-label">Image</span>
-                    <span class="val-value">{'✓ Loaded' if val_image else 'Missing'}</span>
+                <div class="val-col">
+                    <span class="val-lbl">IMAGE</span>
+                    <span class="val-txt">{'✓ Loaded' if val_image else 'Missing'}</span>
                 </div>
-                <div class="val-item">
-                    <span class="val-label">Boundary</span>
-                    <span class="val-value">{'✓ Loaded' if val_boundary else '✓ Full Extent'}</span>
+                <div class="val-col">
+                    <span class="val-lbl">BOUNDARY</span>
+                    <span class="val-txt">{'✓ Loaded' if val_boundary else '✓ Full Extent'}</span>
                 </div>
-                <div class="val-item">
-                    <span class="val-label">CRS</span>
-                    <span class="val-value">{crs_label}</span>
+                <div class="val-col">
+                    <span class="val-lbl">CRS</span>
+                    <span class="val-txt">{crs_label}</span>
                 </div>
-                <div class="val-item">
-                    <span class="val-label">GSD</span>
-                    <span class="val-value">{gsd_label}</span>
+                <div class="val-col">
+                    <span class="val-lbl">GSD</span>
+                    <span class="val-txt">{gsd_label}</span>
                 </div>
-                <div class="val-item">
-                    <span class="val-label">AOI Overlap</span>
-                    <span class="val-value">{overlap_label}</span>
+                <div class="val-col">
+                    <span class="val-lbl">AOI OVERLAP</span>
+                    <span class="val-txt">{overlap_label}</span>
                 </div>
-                <div class="val-item">
-                    <span class="val-label">Status</span>
-                    {status_html}
+                <div class="val-col">
+                    <span class="val-lbl">STATUS</span>
+                    {status_badge}
                 </div>
             </div>
         </div>
@@ -716,7 +823,7 @@ def main():
                     <div class="kpi-sub">{forest_ha_str}</div>
                 </div>
                 <div class="kpi-card">
-                    <div class="kpi-label">UNIQUE CANOPY</div>
+                    <div class="kpi-label">UNIQUE CANOPY AREA</div>
                     <div class="kpi-value">{unique_canopy_str}</div>
                     <div class="kpi-sub">{unique_ha_str}</div>
                 </div>
@@ -990,18 +1097,14 @@ def main():
         )
 
     else:
-        # Default State Before Analysis
+        # FIX 8: Compact Ready for Analysis Callout (Before Analysis)
         st.markdown(
             """
-            <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 24px; margin-top: 10px;">
-                <h4 style="margin-top: 0; color: #0F172A; font-weight: 700;">Ready for Analysis</h4>
-                <p style="color: #475569; font-size: 0.92rem; line-height: 1.5;">
-                    The default sample dataset is loaded and validated in the control panel. 
-                    Click <strong>'Run Forest Analysis'</strong> in the sidebar to execute DeepForest neural detection, 
-                    elliptical crown modeling, and continuous canopy footprint dissolution.
-                </p>
-                <div style="font-size: 0.82rem; color: #64748B; margin-top: 12px;">
-                    <strong>Notice:</strong> Optical canopy surface measurements are geometric approximations and should be validated through field surveys prior to commercial carbon accounting.
+            <div class="ready-callout">
+                <div class="callout-badge">READY FOR ANALYSIS</div>
+                <div class="callout-content">
+                    <div class="callout-title">Demo imagery and forest boundary validated successfully.</div>
+                    <div class="callout-sub">Click <strong>Run Forest Analysis</strong> in the sidebar to execute DeepForest neural detection, inscribed crown modeling, and continuous canopy footprint dissolution.</div>
                 </div>
             </div>
             """,
